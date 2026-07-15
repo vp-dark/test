@@ -3,14 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Realistic AI Text to Speech</title>
-    <!-- Include the Puter.js library which handles the free AI connection -->
-    <script src="https://js.puter.com/v2/"></script>
+    <title>Text to Speech Synthesizer</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #0f172a;
-            color: #f8fafc;
+            background-color: #f4f7f6;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -18,129 +15,192 @@
             margin: 0;
         }
         .container {
-            background: #1e293b;
+            background: #ffffff;
             padding: 30px;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
             width: 90%;
             max-width: 500px;
-            border: 1px solid #334155;
         }
         h2 {
             text-align: center;
-            color: #38bdf8;
+            color: #2c3e50;
             margin-top: 0;
             margin-bottom: 20px;
-            letter-spacing: 1px;
         }
-        textarea, select {
+        textarea {
             width: 100%;
+            height: 150px;
             padding: 12px;
-            background: #0f172a;
-            color: #f8fafc;
-            border: 1px solid #475569;
+            border: 1px solid #dcdde1;
             border-radius: 8px;
-            font-size: 15px;
+            resize: none;
+            font-size: 16px;
             font-family: inherit;
             box-sizing: border-box;
             margin-bottom: 20px;
             transition: border-color 0.3s;
         }
-        textarea {
-            height: 140px;
-            resize: none;
-        }
-        textarea:focus, select:focus {
+        textarea:focus {
             outline: none;
-            border-color: #38bdf8;
+            border-color: #007bff;
         }
-        .label {
-            font-size: 13px;
-            color: #94a3b8;
-            margin-bottom: 8px;
-            display: block;
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        select, input[type="range"] {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #dcdde1;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .slider-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .slider-group label {
+            flex-basis: 20%;
             font-weight: 600;
+            color: #555;
+        }
+        .slider-group input {
+            flex-basis: 75%;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
         }
         button {
-            width: 100%;
-            padding: 15px;
-            background-color: #0284c7;
+            flex: 1;
+            padding: 14px;
             color: white;
             border: none;
             border-radius: 8px;
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
-            transition: background 0.3s, transform 0.1s;
+            transition: background 0.3s;
         }
-        button:hover {
-            background-color: #0369a1;
+        #speak-btn {
+            background-color: #007bff;
         }
-        button:active {
-            transform: scale(0.98);
+        #speak-btn:hover {
+            background-color: #0056b3;
         }
-        button:disabled {
-            background-color: #475569;
-            cursor: not-allowed;
-            transform: none;
+        #stop-btn {
+            background-color: #e74c3c;
+        }
+        #stop-btn:hover {
+            background-color: #c0392b;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Studio Quality AI Voices</h2>
+    <h2>Text to Speech</h2>
+    <textarea id="text-input" placeholder="Type something here to hear it read out loud..."></textarea>
     
-    <label class="label" for="voice-select">Choose a Realistic Voice</label>
-    <select id="voice-select">
-        <option value="eve">Eve (Energetic & Friendly)</option>
-        <option value="ara">Ara (Warm & Conversational)</option>
-        <option value="rex">Rex (Confident Male)</option>
-        <option value="sal">Sal (Smooth & Relaxed)</option>
-        <option value="leo">Leo (Authoritative Male)</option>
-    </select>
+    <div class="controls">
+        <select id="voice-select">
+            <option value="">Loading voices...</option>
+        </select>
+        
+        <div class="slider-group">
+            <label for="rate">Speed</label>
+            <input type="range" id="rate" min="0.5" max="2" value="1" step="0.1">
+        </div>
+        
+        <div class="slider-group">
+            <label for="pitch">Pitch</label>
+            <input type="range" id="pitch" min="0" max="2" value="1" step="0.1">
+        </div>
 
-    <label class="label" for="text-input">What should they say?</label>
-    <textarea id="text-input" placeholder="Type your script here... Tip: You can type [pause] or [laugh] to add emotion!"></textarea>
-    
-    <button id="speak-btn">Generate Audio</button>
+        <div class="buttons">
+            <button id="speak-btn">Speak</button>
+            <button id="stop-btn">Stop</button>
+        </div>
+    </div>
 </div>
 
 <script>
+    // Initialize the Web Speech API
+    const synth = window.speechSynthesis;
+    
+    // Grab UI elements
     const textInput = document.getElementById('text-input');
     const voiceSelect = document.getElementById('voice-select');
+    const rate = document.getElementById('rate');
+    const pitch = document.getElementById('pitch');
     const speakBtn = document.getElementById('speak-btn');
+    const stopBtn = document.getElementById('stop-btn');
 
-    speakBtn.addEventListener('click', () => {
-        const text = textInput.value.trim();
+    let voices = [];
 
-        if (!text) {
-            alert("Please type some text first!");
-            return;
+    // Fetch and populate available voices
+    function populateVoiceList() {
+        voices = synth.getVoices();
+        voiceSelect.innerHTML = ''; // Clear default option
+        
+        voices.forEach((voice) => {
+            const option = document.createElement('option');
+            option.textContent = `${voice.name} (${voice.lang})`;
+            
+            if (voice.default) {
+                option.textContent += ' — Default';
+            }
+
+            option.setAttribute('data-lang', voice.lang);
+            option.setAttribute('data-name', voice.name);
+            voiceSelect.appendChild(option);
+        });
+    }
+
+    // Modern browsers load voices asynchronously, so we wait for the event
+    populateVoiceList();
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = populateVoiceList;
+    }
+
+    // Function to handle the actual speaking
+    function speak() {
+        // If it's already speaking, cancel the current text to start the new one
+        if (synth.speaking) {
+            synth.cancel();
         }
 
-        // Disable button while loading
-        speakBtn.disabled = true;
-        speakBtn.textContent = "Generating High-Quality Audio...";
+        if (textInput.value.trim() !== '') {
+            const utterThis = new SpeechSynthesisUtterance(textInput.value);
 
-        // Puter.js AI Text-to-Speech call (100% Free, No API Key needed)
-        puter.ai.txt2speech(text, {
-            provider: "xai", 
-            voice: voiceSelect.value,
-            output_format: "mp3"
-        }).then((audio) => {
-            // Play the audio automatically when it's ready
-            audio.play();
+            // Find the selected voice and apply it
+            const selectedOption = voiceSelect.selectedOptions[0].getAttribute('data-name');
+            for (let i = 0; i < voices.length; i++) {
+                if (voices[i].name === selectedOption) {
+                    utterThis.voice = voices[i];
+                    break;
+                }
+            }
+
+            // Apply pitch and speed settings
+            utterThis.pitch = pitch.value;
+            utterThis.rate = rate.value;
             
-            // Re-enable the button
-            speakBtn.disabled = false;
-            speakBtn.textContent = "Generate Audio";
-        }).catch((error) => {
-            console.error("Speech Generation Error:", error);
-            alert("Something went wrong generating the speech. Please try again.");
-            speakBtn.disabled = false;
-            speakBtn.textContent = "Generate Audio";
-        });
+            // Speak the text
+            synth.speak(utterThis);
+        }
+    }
+
+    // Event Listeners
+    speakBtn.addEventListener('click', speak);
+    
+    stopBtn.addEventListener('click', () => {
+        synth.cancel();
     });
 </script>
 
