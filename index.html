@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Realistic AI Text to Speech</title>
+    <!-- Include the Puter.js library which handles the free AI connection -->
+    <script src="https://js.puter.com/v2/"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 90%;
+            max-width: 500px;
+            border: 1px solid #334155;
+        }
+        h2 {
+            text-align: center;
+            color: #38bdf8;
+            margin-top: 0;
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+        }
+        textarea, select {
+            width: 100%;
+            padding: 12px;
+            background: #0f172a;
+            color: #f8fafc;
+            border: 1px solid #475569;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+            transition: border-color 0.3s;
+        }
+        textarea {
+            height: 140px;
+            resize: none;
+        }
+        textarea:focus, select:focus {
+            outline: none;
+            border-color: #38bdf8;
+        }
+        .label {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-bottom: 8px;
+            display: block;
+            font-weight: 600;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: #0284c7;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.1s;
+        }
+        button:hover {
+            background-color: #0369a1;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        button:disabled {
+            background-color: #475569;
+            cursor: not-allowed;
+            transform: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Studio Quality AI Voices</h2>
+    
+    <label class="label" for="voice-select">Choose a Realistic Voice</label>
+    <select id="voice-select">
+        <option value="eve">Eve (Energetic & Friendly)</option>
+        <option value="ara">Ara (Warm & Conversational)</option>
+        <option value="rex">Rex (Confident Male)</option>
+        <option value="sal">Sal (Smooth & Relaxed)</option>
+        <option value="leo">Leo (Authoritative Male)</option>
+    </select>
+
+    <label class="label" for="text-input">What should they say?</label>
+    <textarea id="text-input" placeholder="Type your script here... Tip: You can type [pause] or [laugh] to add emotion!"></textarea>
+    
+    <button id="speak-btn">Generate Audio</button>
+</div>
+
+<script>
+    const textInput = document.getElementById('text-input');
+    const voiceSelect = document.getElementById('voice-select');
+    const speakBtn = document.getElementById('speak-btn');
+
+    speakBtn.addEventListener('click', () => {
+        const text = textInput.value.trim();
+
+        if (!text) {
+            alert("Please type some text first!");
+            return;
+        }
+
+        // Disable button while loading
+        speakBtn.disabled = true;
+        speakBtn.textContent = "Generating High-Quality Audio...";
+
+        // Puter.js AI Text-to-Speech call (100% Free, No API Key needed)
+        puter.ai.txt2speech(text, {
+            provider: "xai", 
+            voice: voiceSelect.value,
+            output_format: "mp3"
+        }).then((audio) => {
+            // Play the audio automatically when it's ready
+            audio.play();
+            
+            // Re-enable the button
+            speakBtn.disabled = false;
+            speakBtn.textContent = "Generate Audio";
+        }).catch((error) => {
+            console.error("Speech Generation Error:", error);
+            alert("Something went wrong generating the speech. Please try again.");
+            speakBtn.disabled = false;
+            speakBtn.textContent = "Generate Audio";
+        });
+    });
+</script>
+
+</body>
+</html>
